@@ -11,12 +11,12 @@ object Dictionary {
   ":3", "good to see ya!"))
 
   def Help = get(List("Google will help you! :P", "but what can i do?..", "help! help! someone, help him!",
-    "your request will be processed within 2 working days.", ""))
+    "your request will be processed within 2 working days."))
 
   def Kawaii = get(List("kawaii!", "nyaa!", "desu!", ":3", ":P", "unicorns freedom!", "nya-a-a...", "^_^"))
 
   def Thanks = get(List("thank you!", "thanks!", "thx!", "cheers!",
-  "thanks a lot!", "i owe you one!", "arigatou!"))
+    "thanks a lot!", "i owe you one!", "arigatou!"))
 
   def Wtf = get(List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!",
     "baka!", ".-.", "what language is this?"))

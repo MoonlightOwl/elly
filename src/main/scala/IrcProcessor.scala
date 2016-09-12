@@ -13,7 +13,9 @@ object IrcProcessor {
   // a bit of formatting
   def sender(irc: IrcCommand) = irc.source.getOrElse("whoever!").split("!").head
   def message(origin: IrcCommand, text: String) =
-    Seq(IrcCommand.PrivMsg(origin.args.head, sender(origin) + ": " + text))
+    Seq(IrcCommand.PrivMsg(
+      if(origin.args.head == Config.Nickname) sender(origin) else origin.args.head,  // answer to PM, if PM got
+      sender(origin) + ": " + text))
 
   def process(pkg: Package): Package = Package({
     val irc = pkg.content.head
