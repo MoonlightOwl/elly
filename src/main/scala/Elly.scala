@@ -17,20 +17,20 @@ object Elly extends App {
     * Reads/writes byte strings from/to the upstream.
     * Writes/reads typed IRC commands to/from the downstream.
     */
-  def serialization: BidiFlow[ByteString, IrcCommand, IrcCommand, ByteString, NotUsed] = {
+  def serialization: BidiFlow[ByteString, Package, Package, ByteString, NotUsed] = {
     val read = Flow[ByteString]
-      .via(Framing.delimiter(ByteString("\r\n"), 65536))
-      .map(IrcCommand.read)
+      .via(Framing.delimiter(Package.Delimiter, Package.MaxFrameLength))
+      .map(Package.read)
       .mapConcat {
       case Success(cmd) => cmd :: Nil
       case Failure(cause) => Nil
     }
 
-    val write = Flow[IrcCommand]
-      .map(IrcCommand.write)
+    val write = Flow[Package]
+      .map(Package.write)
       // initial kick
       .merge(Source.single(ByteString("PING")))
-      .map(_ ++ ByteString("\r\n"))
+      .map(_ ++ Package.Delimiter)
 
     BidiFlow.fromFlows(read, write)
   }
@@ -38,10 +38,10 @@ object Elly extends App {
   /**
     * Logs everything to console
     */
-  def logging: BidiFlow[IrcCommand, IrcCommand, IrcCommand, IrcCommand, NotUsed] = {
-    def logger(prefix: String) = (cmd: IrcCommand) => {
-      println(prefix + IrcCommand.write(cmd).utf8String)
-      cmd
+  def logging: BidiFlow[Package, Package, Package, Package, NotUsed] = {
+    def logger(prefix: String) = (pkg: Package) => {
+      pkg.content.foreach(irc => println(prefix + IrcCommand.write(irc).utf8String))
+      pkg
     }
     BidiFlow.fromFunctions(logger("> "), logger("< "))
   }
@@ -53,6 +53,6 @@ object Elly extends App {
     .join(IrcProcessor.flow)
     .join(CliProcessor.flow)
     // combine input with output, while just listening and not saying anything
-    .join(Flow[IrcCommand].filter(_ => false))
+    .join(Flow[Package].filter(_ => false))
     .run()
 }

@@ -33,4 +33,11 @@ object IrcCommand {
     }
     ByteString(p1 + p2 + p3)
   }
+
+  def Nick(nickname: String) = IrcCommand(s"NICK $nickname", Seq())
+  def User(domain: String, realname: String) = IrcCommand(s"USER $domain 0 *", Seq(realname))
+  def Identify(password: String) = IrcCommand("PRIVMSG NickServ", Seq(s"IDENTIFY $password"))
+  def Join(channel: String) = IrcCommand(s"JOIN $channel", Seq())
+  def PrivMsg(to: String, message: String) = IrcCommand(s"PRIVMSG $to", Seq(message))
+  def Null() = IrcCommand("", Seq())
 }

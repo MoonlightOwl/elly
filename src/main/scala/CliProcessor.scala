@@ -2,43 +2,40 @@ import akka.NotUsed
 import akka.stream.scaladsl.{BidiFlow, Flow, Source}
 
 import scala.io.StdIn
+import scala.language.postfixOps
 
 object CliProcessor {
   /**
     * Read and process user input from console
     */
-  def flow: BidiFlow[IrcCommand, IrcCommand, IrcCommand, IrcCommand, NotUsed] = {
-    val read = Flow[IrcCommand]
+  def flow: BidiFlow[Package, Package, Package, Package, NotUsed] = {
+    val read = Flow[Package]
 
-    val write = Flow[IrcCommand]
+    val write = Flow[Package]
       // log in
-      .merge(Source(List(
-      IrcCommand(s"NICK ${Config.Nickname}", Seq()),
-      IrcCommand(s"USER ${Config.Domain} 0 *", Seq(Config.RealName))
-    )))
+      .merge(Source single Package(Seq(
+        IrcCommand.Nick(Config.Nickname),
+        IrcCommand.User(Config.Domain, Config.RealName)))
+      )
       // read input from console
-      .merge((Source fromIterator {
-      () => Iterator.continually(
-        {
+      .merge(Source fromIterator { () => Iterator.continually(
+        Package(Seq({
           val data = StdIn.readLine()
           data match {
-            case "~join" => IrcCommand(s"JOIN ${Config.Channel}", Seq())
-            case "~identify" => IrcCommand("PRIVMSG NickServ", Seq(s"IDENTIFY ${Config.Password}"))
+            case "~join" => IrcCommand.Join(Config.Channels.head)
+            case "~identify" => IrcCommand.Identify(Config.Password)
 
             case message if message.startsWith("~msg") =>
               val Pattern = """(.+)\s(.+)\s(.*)""".r
               message match {
-                case Pattern(prefix, receiver, text) =>
-                  IrcCommand("PRIVMSG " + receiver, Seq(text))
-                case _ =>
-                  IrcCommand("", Seq())
+                case Pattern(prefix, receiver, text) => IrcCommand.PrivMsg(receiver, text)
+                case _ => IrcCommand.Null()
               }
 
-            case _ => IrcCommand(s"PRIVMSG ${Config.Channel}", Seq(data))
+            case _ => IrcCommand.PrivMsg(Config.Channels.head, data)
           }
-        }
-      )
-    }).async)
+        }))
+      )} async)
 
     BidiFlow.fromFlows(read, write)
   }

@@ -7,55 +7,60 @@ import scala.util.Random
 object IrcProcessor {
   val random = new Random(System.currentTimeMillis())
 
+  val systemCommands = List("PING", "376")
+
   // second argument of IrcCommand contains PRIVMSG message text
   def isCommand(irc: IrcCommand): Boolean =
-    irc.command == "PING" || ( irc.command == "PRIVMSG" &&
-      (irc.args(1).startsWith("~") || irc.args(1).startsWith(Config.Nickname)))
+    systemCommands.contains(irc.command) ||
+      ( irc.command == "PRIVMSG" && (irc.args(1).startsWith("~") || irc.args(1).startsWith(Config.Nickname)))
 
-  def message(to:String, text: String) = IrcCommand(s"PRIVMSG ${Config.Channel}", Seq(to + ": " + text))
+  def message(channel: String, to:String, text: String) = IrcCommand.PrivMsg(channel, to + ": " + text)
 
   def sender(irc: IrcCommand) = irc.source.getOrElse("whoever!").split("!").head
 
   def kawaii(): String = random.shuffle(
     List("kawaii!", "nyaa!", "desu!", ":3", ":P", "unicorns freedom!", "nya-a-a...", "^_^")).head
   def wtf(): String = random.shuffle(
-    List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!", "baka!")).head
+    List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!",
+      "baka!", ".-.", "what language is this?")).head
   def hello(): String = random.shuffle(
-    List("hi!", "hello!", "i'm glad to see you!", "hey!", "good morning!", ":3", "good to see you!")).head
+    List("o/", "hi!", "hello!", "i'm glad to see you!", "hey!", "good morning!", ":3", "good to see ya!")).head
   def thanks(): String = random.shuffle(
     List("thank you!", "thanks!", "thx!", "cheers!", "thanks a lot!", "i owe you one!", "arigatou!")).head
 
-  def process(irc: IrcCommand): IrcCommand = {
+  def process(pkg: Package): Package = Package({
+    val irc = pkg.content.head
     irc.command match {
-      case "PING" => IrcCommand("PONG", irc.args, None)
+      case "PING" => Seq(IrcCommand("PONG", irc.args, None))
+      case "376" => Config.Channels.map(IrcCommand.Join)
       case "PRIVMSG" =>
         if (irc.args(1).startsWith(Config.Nickname))
-          message(sender(irc), kawaii())
+          Seq(message(irc.args.head, sender(irc), kawaii()))
         else irc.args(1).toLowerCase
           match {
-            case "~" => message(sender(irc), kawaii())
-            case "~hi" | "~hello" | "~hey" | "~greetings" => message(sender(irc), hello())
-            case "~cookie" => message(sender(irc), thanks())
-            case "~baka" => message(sender(irc), "｡◕_◕｡")
-            case _ => message(sender(irc), wtf())
+            case "~" => Seq(message(irc.args.head, sender(irc), kawaii()))
+            case "~o/" | "~hi" | "~hello" | "~hey" | "~greetings" => Seq(message(irc.args.head, sender(irc), hello()))
+            case "~cookie" => Seq(message(irc.args.head, sender(irc), thanks()))
+            case "~baka" => Seq(message(irc.args.head, sender(irc), "｡◕_◕｡"))
+            case _ => Seq(message(irc.args.head, sender(irc), wtf()))
           }
-      case _ => message(sender(irc), wtf())
+      case _ => Seq(message(irc.args.head, sender(irc), wtf()))
     }
-  }
+  })
 
   /**
-    * Auto answer on PING requests & commands processing
+    * Auto answer on PING requests & process commands
     */
-  def flow: BidiFlow[IrcCommand, IrcCommand, IrcCommand, IrcCommand, NotUsed] = {
+  def flow: BidiFlow[Package, Package, Package, Package, NotUsed] = {
     BidiFlow.fromGraph(GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._
 
-      val broadcast = builder.add(Broadcast[IrcCommand](2))
-      val merge = builder.add(Merge[IrcCommand](2))
+      val broadcast = builder.add(Broadcast[Package](2))
+      val merge = builder.add(Merge[Package](2))
 
-      val filterCommands = builder.add(Flow[IrcCommand].filter(isCommand))
-      val filterNotCommands = builder.add(Flow[IrcCommand].filter(!isCommand(_)))
-      val mapCommands = builder.add(Flow[IrcCommand].map(process))
+      val filterCommands = builder.add(Flow[Package].filter(pkg => isCommand(pkg.content.head)))
+      val filterNotCommands = builder.add(Flow[Package].filter(pkg => !isCommand(pkg.content.head)))
+      val mapCommands = builder.add(Flow[Package].map(process))
 
       broadcast.out(0) ~> filterNotCommands
       broadcast.out(1) ~> filterCommands ~> mapCommands ~> merge.in(0)

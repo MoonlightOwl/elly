@@ -10,7 +10,7 @@ object Config {
 
   val Server = config.getString("server.url")
   val Port = config.getInt("server.port")
-  val Channel = config.getString("server.channel")
+  val Channels = config.getString("server.channels").split("\\s*,\\s*")
 
   val Nickname = config.getString("user.nickname")
   val Domain = config.getString("user.domain")
