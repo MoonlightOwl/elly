@@ -2,11 +2,7 @@ import akka.NotUsed
 import akka.stream.{BidiShape, FlowShape}
 import akka.stream.scaladsl.{BidiFlow, Broadcast, Flow, GraphDSL, Merge}
 
-import scala.util.Random
-
 object IrcProcessor {
-  val random = new Random(System.currentTimeMillis())
-
   val systemCommands = List("PING", "376")
 
   // second argument of IrcCommand contains PRIVMSG message text
@@ -14,19 +10,10 @@ object IrcProcessor {
     systemCommands.contains(irc.command) ||
       ( irc.command == "PRIVMSG" && (irc.args(1).startsWith("~") || irc.args(1).startsWith(Config.Nickname)))
 
-  def message(channel: String, to:String, text: String) = IrcCommand.PrivMsg(channel, to + ": " + text)
-
+  // a bit of formatting
   def sender(irc: IrcCommand) = irc.source.getOrElse("whoever!").split("!").head
-
-  def kawaii(): String = random.shuffle(
-    List("kawaii!", "nyaa!", "desu!", ":3", ":P", "unicorns freedom!", "nya-a-a...", "^_^")).head
-  def wtf(): String = random.shuffle(
-    List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!",
-      "baka!", ".-.", "what language is this?")).head
-  def hello(): String = random.shuffle(
-    List("o/", "hi!", "hello!", "i'm glad to see you!", "hey!", "good morning!", ":3", "good to see ya!")).head
-  def thanks(): String = random.shuffle(
-    List("thank you!", "thanks!", "thx!", "cheers!", "thanks a lot!", "i owe you one!", "arigatou!")).head
+  def message(origin: IrcCommand, text: String) =
+    Seq(IrcCommand.PrivMsg(origin.args.head, sender(origin) + ": " + text))
 
   def process(pkg: Package): Package = Package({
     val irc = pkg.content.head
@@ -34,17 +21,18 @@ object IrcProcessor {
       case "PING" => Seq(IrcCommand("PONG", irc.args, None))
       case "376" => Config.Channels.map(IrcCommand.Join)
       case "PRIVMSG" =>
-        if (irc.args(1).startsWith(Config.Nickname))
-          Seq(message(irc.args.head, sender(irc), kawaii()))
+        if (irc.args(1).startsWith(Config.Nickname)) message(irc, Dictionary.Kawaii)
         else irc.args(1).toLowerCase
           match {
-            case "~" => Seq(message(irc.args.head, sender(irc), kawaii()))
-            case "~o/" | "~hi" | "~hello" | "~hey" | "~greetings" => Seq(message(irc.args.head, sender(irc), hello()))
-            case "~cookie" => Seq(message(irc.args.head, sender(irc), thanks()))
-            case "~baka" => Seq(message(irc.args.head, sender(irc), "｡◕_◕｡"))
-            case _ => Seq(message(irc.args.head, sender(irc), wtf()))
+            case "~" => message(irc, Dictionary.Kawaii)
+            case "~o/" | "~hi" | "~hello" | "~hey" | "~greetings" =>
+              message(irc, Dictionary.Hello)
+            case "~cookie" => message(irc, Dictionary.Thanks)
+            case "~baka" => message(irc, "｡◕_◕｡")
+            case "~help" => message(irc, Dictionary.Help)
+            case _ => message(irc, Dictionary.Wtf)
           }
-      case _ => Seq(message(irc.args.head, sender(irc), wtf()))
+      case _ => message(irc, Dictionary.Wtf)
     }
   })
 
