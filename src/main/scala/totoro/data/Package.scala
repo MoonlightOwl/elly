@@ -1,6 +1,9 @@
+package totoro.data
+
 import akka.util.ByteString
 
 import scala.util._
+
 
 case class Package(content: Seq[IrcCommand])
 

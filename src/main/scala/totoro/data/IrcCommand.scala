@@ -1,10 +1,11 @@
+package totoro.data
+
 import akka.util.ByteString
 
 import scala.util._
 
 
 case class IrcCommand(command: String, args: Seq[String], source: Option[String] = None)
-
 
 object IrcCommand {
   def read(raw: ByteString): Try[IrcCommand] = {

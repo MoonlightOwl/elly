@@ -1,17 +1,22 @@
+package totoro.processing
+
 import akka.NotUsed
 import akka.stream.scaladsl.{BidiFlow, Flow, Source}
+import totoro.data.{IrcCommand, Package}
+import totoro.{Config, data}
 
 import scala.io.StdIn
 import scala.language.postfixOps
 
+/**
+  * Read and process user input from console
+  */
 object CliProcessor {
-  /**
-    * Read and process user input from console
-    */
-  def flow: BidiFlow[Package, Package, Package, Package, NotUsed] = {
-    val read = Flow[Package]
 
-    val write = Flow[Package]
+  def flow: BidiFlow[data.Package, data.Package, data.Package, data.Package, NotUsed] = {
+    val read = Flow[data.Package]
+
+    val write = Flow[data.Package]
       // log in
       .merge(Source single Package(Seq(
         IrcCommand.Nick(Config.Nickname),

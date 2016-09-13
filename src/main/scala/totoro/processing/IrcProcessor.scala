@@ -1,7 +1,14 @@
-import akka.NotUsed
-import akka.stream.{BidiShape, FlowShape}
-import akka.stream.scaladsl.{BidiFlow, Broadcast, Flow, GraphDSL, Merge}
+package totoro.processing
 
+import akka.NotUsed
+import akka.stream.scaladsl.{BidiFlow, Broadcast, Flow, GraphDSL, Merge}
+import akka.stream.{BidiShape, FlowShape}
+import totoro.data.{Dictionary, IrcCommand, Package}
+import totoro.{Config, data}
+
+/**
+  * Auto answer on PING requests & process commands
+  */
 object IrcProcessor {
   val systemCommands = List("PING", "376")
 
@@ -17,7 +24,7 @@ object IrcProcessor {
       if(origin.args.head == Config.Nickname) sender(origin) else origin.args.head,  // answer to PM, if PM got
       sender(origin) + ": " + text))
 
-  def process(pkg: Package): Package = Package({
+  def process(pkg: data.Package): data.Package = Package({
     val irc = pkg.content.head
     irc.command match {
       case "PING" => Seq(IrcCommand("PONG", irc.args, None))
@@ -38,9 +45,7 @@ object IrcProcessor {
     }
   })
 
-  /**
-    * Auto answer on PING requests & process commands
-    */
+
   def flow: BidiFlow[Package, Package, Package, Package, NotUsed] = {
     BidiFlow.fromGraph(GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._

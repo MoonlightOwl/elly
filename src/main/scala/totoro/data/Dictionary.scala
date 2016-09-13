@@ -1,4 +1,7 @@
+package totoro.data
+
 import scala.util.Random
+
 
 object Dictionary {
   val random = new Random(System.currentTimeMillis())
