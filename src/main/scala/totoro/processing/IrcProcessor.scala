@@ -6,6 +6,8 @@ import akka.stream.{BidiShape, FlowShape}
 import totoro.data.{Dictionary, IrcCommand, Package}
 import totoro.{Config, data}
 
+import scala.language.postfixOps
+
 /**
   * Auto answer on PING requests & process commands
   */
@@ -31,16 +33,19 @@ object IrcProcessor {
       case "376" => Config.Channels.map(IrcCommand.Join)
       case "PRIVMSG" =>
         if (irc.args(1).startsWith(Config.Nickname)) message(irc, Dictionary.Kawaii)
-        else irc.args(1).toLowerCase
-          match {
+        else {
+          val words = irc.args(1).toLowerCase.split("\\s+")
+          words(0) match {
             case "~" => message(irc, Dictionary.Kawaii)
             case "~o/" | "~hi" | "~hello" | "~hey" | "~greetings" =>
               message(irc, Dictionary.Hello)
             case "~cookie" => message(irc, Dictionary.Thanks)
             case "~baka" => message(irc, "｡◕_◕｡")
             case "~help" => message(irc, Dictionary.Help)
+            case "~orly" | "~?" | "~really?" => message(irc, Dictionary.YesNo)
             case _ => message(irc, Dictionary.Wtf)
           }
+        }
       case _ => message(irc, Dictionary.Wtf)
     }
   })

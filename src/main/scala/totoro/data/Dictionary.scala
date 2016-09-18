@@ -23,4 +23,6 @@ object Dictionary {
 
   def Wtf = get(List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!",
     "baka!", ".-.", "what language is this?"))
+
+  def YesNo = get(List("yes!", "no!", "kawaii :3", "yeah!", "nope!", "maybe..."))
 }
