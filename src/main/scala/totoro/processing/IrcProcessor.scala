@@ -30,7 +30,7 @@ object IrcProcessor {
     val irc = pkg.content.head
     irc.command match {
       case "PING" => Seq(IrcCommand("PONG", irc.args, None))
-      case "376" => Config.Channels.map(IrcCommand.Join)
+      case "376" => Config.Channels.map(IrcCommand.Join) ++ Seq(IrcCommand.Identify(Config.Password))
       case "PRIVMSG" =>
         if (irc.args(1).startsWith(Config.Nickname)) message(irc, Dictionary.Kawaii)
         else {
@@ -43,6 +43,7 @@ object IrcProcessor {
             case "~baka" => message(irc, "｡◕_◕｡")
             case "~help" => message(irc, Dictionary.Help)
             case "~orly" | "~?" | "~really?" => message(irc, Dictionary.YesNo)
+            case "~music" => message(irc, Dictionary.Music)
             case _ => message(irc, Dictionary.Wtf)
           }
         }

@@ -24,5 +24,9 @@ object Dictionary {
   def Wtf = get(List("i'm sorry, what?", "wtf?", "do you speak english?", "no way!", "wut?!",
     "baka!", ".-.", "what language is this?"))
 
-  def YesNo = get(List("yes!", "no!", "kawaii :3", "yeah!", "nope!", "maybe..."))
+  def YesNo = get(List("yes!", "no!", "kawaii :3", "yeah!", "nope!", "maybe...",
+    "yep.", "i'n mot sure yet...", "not really."))
+
+  def Music = get(List("Infected Mushroom!", "GoldFish!", "The Sounds!", "The Strokes!", "Prodigy!", "Grimes!",
+    "Ohrbooten!", "Charisma.com!", "Deep Forest!", "Uncle Outrage!", "Hadouken!", "The Glitch Mob!"))
 }
